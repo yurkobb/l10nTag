@@ -1,0 +1,8 @@
+This package provides support for multilingual strings anywhere in MODx output (resources, chunks, templates, gallery album names, etc.)
+
+The tags look like this: [@en Programming][@de Programmieren][@uk Програмування]. Each tag is processed separately so it doesn't matter how you combine them. The provided plugin will select the needed string based on the cultureKey setting. Remember that there's only one '[' and ']':)
+
+The git repo is here:
+  http://github.com/yurkobb/l10nTag
+
+Happy using!

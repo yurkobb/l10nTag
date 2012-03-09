@@ -63,7 +63,7 @@ $builder->putVehicle($vehicle);
 /* Package metadata etc */
 $builder->setPackageAttributes(array(
 	 'license' => 'This package is licensed under the GNU GPL version 2',
-	 'readme' => file_get_contents(dirname(__FILE__) . '/README')));
+	 'readme' => file_get_contents(dirname(dirname(__FILE__)) . '/README')));
 
 $builder->pack();
 
