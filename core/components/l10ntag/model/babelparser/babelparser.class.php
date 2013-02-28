@@ -1,69 +1,56 @@
 <?php
 
 class BabelParser {
-	const TAGSTART = '[@';
-	const TAGEND = ']';
-
+	public $TAGSTART = "[@";
+	public $TAGEND = "]";
+	public $cultureKeyLength = 2;
 	public function getTagStart ($input, $offset) {
-		return strpos($input, self::TAGSTART, $offset);
+		return strpos($input, $this->TAGSTART, $offset);
 	}
 
 	public function getTagEnd ($input, $offset) {
-		$maybeTagEnd = strpos($input, self::TAGEND, $offset) + $this->tagEndLen;
-		while ($maybeTagEnd && substr($input, $maybeTagEnd + 1, 1) == ']') {
-			$maybeTagEnd = strpos($input, self::TAGEND, $maybeTagEnd) + $this->tagEndLen;
+		$tagEnd = strpos($input, $this->TAGEND, $offset) + $this->tagEndLen;
+		while ($tagEnd && $input[$tagEnd+1] == $this->TAGEND) {
+			$tagEnd++;
 		}
-		$tagEnd = $maybeTagEnd;
 		return $tagEnd;
 	}
 
 	public function __construct (&$modx, $options) {
 		$this->xpdo = $modx;
-		$this->tagStartLen = strlen(self::TAGSTART);
-		$this->tagEndLen = strlen(self::TAGEND);
-		// We currently suppose cultureKey is always 2 bytes long
+		$this->tagStartLen = strlen($this->TAGSTART);
+		$this->tagEndLen = strlen($this->TAGEND);
 		$this->cultureKey = $this->xpdo->getOption('cultureKey');
-		$this->xpdo->log(xPDO::LOG_LEVEL_DEBUG, '[BabelParser] Running with cultureKey = '.$this->cultureKey);
+//		$this->xpdo->log(xPDO::LOG_LEVEL_DEBUG, '[BabelParser] Running with cultureKey = '.$this->cultureKey);
 	}
-
-	public function parseString ($input) {
-		$inputLen = strlen($input);
-		$tagStart = strpos($input, self::TAGSTART);
-		$tagEnd = 0;
-		$tag = '';
-		$output = '';
-
-		while ($tagStart !== false) {
-			$output .= substr($input, $tagEnd, $tagStart - $tagEnd);
-			
-			$tagEnd = $this->getTagEnd($input, $tagStart + $this->tagStartLen);
-			/* $this->xpdo->setLogLevel(xPDO::LOG_LEVEL_DEBUG); */
-			/* $this->xpdo->log(xPDO::LOG_LEVEL_DEBUG, 'tagStart = '.$tagStart); */
-			/* $this->xpdo->log(xPDO::LOG_LEVEL_DEBUG, 'tagEnd = '.$tagEnd); */
-			if (!$tagEnd) {
-				/* $this->xpdo->log(xPDO::LOG_LEVEL_ERROR,  */
-				/* 				 '[L10nParser]: Couldn\'t find closig tag started at index ' . $tagStart); */
-				return $output;
+	public function parseString($input){
+		$var = &$input;
+		$tagStart = strpos($var,$this->TAGSTART);
+		$tagEnd=0;
+		$tag='';
+		while($tagStart!=false){
+			$tagEnd=$this->getTagEnd($var,$tagStart);
+			if(!$tagEnd){
+				$var=substr($var,$tagStart);
+				break;
 			}
-			$tag = substr($input, $tagStart, $tagEnd - $tagStart);
-			
-			$output .= $this->parseTag($tag);
-
-			$tagStart = $this->getTagStart($input, $tagEnd + $this->tagEndLen);
+			$tag = substr($var,$tagStart,$tagEnd - $tagStart);
+			$newTag = $this->parseTag($tag);
+			$var = str_replace($tag, $newTag , $var);
+			$tagStart = $this->getTagStart($var,$tagEnd-(strlen($tag)-strlen($newTag)));
 		}
-		if (!$output) return $input;
-		else return $output;
+		return $var;
 	}
-	
-	public function parseTag ($tag) {
-		/* $this->xpdo->log(xPDO::LOG_LEVEL_DEBUG, 'parseTag() ran with this tag: ' . $tag); */
-		$tagCulture = substr($tag, $this->tagStartLen, 2);
-		/* $this->xpdo->log(xPDO::LOG_LEVEL_DEBUG, 'Found tag cultureKey: ' . $tagCulture); */
-		if ($tagCulture == $this->cultureKey) {
-			$text = substr($tag, $this->tagStartLen + 3, $this->tagEndLen * -1);
-			return $text;
-		} else {
-			return '';
+	public function parseTag($tag){
+		$tagCulture = substr($tag,$this->tagStartLen,$this->cultureKeyLength);
+		if(substr($tag,0,$this->tagStartLen)==$this->TAGSTART && $tagCulture == $this->cultureKey){
+			return substr($tag,4,strlen($tag)-$this->tagStartLen - $this->tagEndLen-2);
 		}
+		else if(substr($tag,0,$this->tagStartLen)!=$this->TAGSTART){
+			return $tag;
+		}
+		else{
+			return "";
+		};
 	}
 }
